@@ -14,9 +14,8 @@ import com.google.android.gms.wearable.Wearable
 import kaist.iclab.tracker.listener.SamsungHealthSensorInitializer
 import kaist.iclab.tracker.sensor.controller.BackgroundController
 import kaist.iclab.tracker.sensor.controller.ControllerState
-import kaist.iclab.wearabletracker.data.AutoSyncManager
 import kaist.iclab.wearabletracker.data.DeviceInfo
-import kaist.iclab.wearabletracker.data.PhoneCommunicationManager
+import kaist.iclab.wearabletracker.data.WatchDataExporter
 import kaist.iclab.wearabletracker.helpers.NotificationHelper
 import kaist.iclab.wearabletracker.repository.Result
 import kaist.iclab.wearabletracker.repository.WatchSensorRepository
@@ -24,10 +23,8 @@ import kaist.iclab.wearabletracker.storage.SensorDataReceiver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -37,11 +34,10 @@ import kotlin.coroutines.resumeWithException
 class SettingsViewModel(
     private val sensorController: BackgroundController,
     private val sensorDataReceiver: SensorDataReceiver,
-    private val phoneCommunicationManager: PhoneCommunicationManager,
     private val repository: WatchSensorRepository,
     private val samsungHealthSensorInitializer: SamsungHealthSensorInitializer,
     private val applicationContext: Context,
-    private val autoSyncManager: AutoSyncManager
+    private val watchDataExporter: WatchDataExporter
 ) : ViewModel() {
     companion object {
         private val TAG = SettingsViewModel::class.simpleName
@@ -50,37 +46,15 @@ class SettingsViewModel(
         private const val PHONE_STATUS_REFRESH_MS = 15_000L // 15 seconds
     }
 
-    // StateFlow for last sync timestamp
-    private val _lastSyncTimestamp = MutableStateFlow<Long?>(null)
-    val lastSyncTimestamp: StateFlow<Long?> = _lastSyncTimestamp.asStateFlow()
-
     // Total record count across all sensors
     private val _totalRecordCount = MutableStateFlow(0)
     val totalRecordCount: StateFlow<Int> = _totalRecordCount.asStateFlow()
-
-    // Sync progress: 0.0 to 1.0, null if not syncing
-    val syncProgress: StateFlow<Float?> = phoneCommunicationManager.syncProgress
 
     // Phone connection status
     private val _isPhoneConnected = MutableStateFlow(false)
     val isPhoneConnected: StateFlow<Boolean> = _isPhoneConnected.asStateFlow()
 
     private val nodeClient by lazy { Wearable.getNodeClient(applicationContext) }
-
-    // Auto-sync settings
-    val autoSyncEnabled: StateFlow<Boolean> = repository.autoSyncEnabledFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
-
-    val autoSyncInterval: StateFlow<Long> = repository.autoSyncIntervalFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0L)
-
-    fun setAutoSyncEnabled(enabled: Boolean) {
-        repository.setAutoSyncEnabled(enabled)
-    }
-
-    fun setAutoSyncInterval(intervalMs: Long) {
-        repository.setAutoSyncInterval(intervalMs)
-    }
 
     // Battery level (0-100)
     private val _batteryLevel = MutableStateFlow(-1)
@@ -106,12 +80,6 @@ class SettingsViewModel(
     }
 
     init {
-        viewModelScope.launch {
-            repository.lastSyncTimestampFlow.collect {
-                _lastSyncTimestamp.value = it
-            }
-        }
-
         viewModelScope.launch {
             sensorController.controllerStateFlow.collect {
                 if (it.flag == ControllerState.FLAG.RUNNING) {
@@ -206,14 +174,18 @@ class SettingsViewModel(
         sensorController.stop()
     }
 
-    fun upload() {
+    fun export(context: Context) {
         viewModelScope.launch {
-            phoneCommunicationManager.sendDataToPhone()
+            try {
+                val fileCount = withContext(Dispatchers.IO) {
+                    watchDataExporter.exportAll()
+                }
+                NotificationHelper.showExportSuccess(context, fileCount)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to export sensor data: ${e.message}", e)
+                NotificationHelper.showExportFailure(context, e, "Failed to export sensor data")
+            }
         }
-    }
-
-    fun refreshLastSyncTimestamp() {
-        // Reactive via lastSyncTimestampFlow
     }
 
     fun flush(context: Context) {

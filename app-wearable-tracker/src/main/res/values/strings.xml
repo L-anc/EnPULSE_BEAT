@@ -2,11 +2,9 @@
     <string name="app_name">EnPULSE</string>
 
     <!-- Settings Screen -->
-    <string name="upload_data">Upload data</string>
+    <string name="export_data">Export data</string>
     <string name="start_stop_collection">Start/Stop Collection</string>
     <string name="reset_icon">Reset icon</string>
-    <string name="last_sync_placeholder">Last Sync: -</string>
-    <string name="last_sync_format">Last Sync: %1$s</string>
     <string name="switch_on">On</string>
     <string name="switch_off">Off</string>
 
@@ -25,15 +23,12 @@
     <string name="notification_description">Data collection is running in the background</string>
 
     <!-- Notification Messages -->
-    <string name="notification_upload_success_title">Data Sent!</string>
-    <string name="notification_upload_success_message">Sensor data has been sent to phone</string>
-    <string name="notification_upload_failure_title">Data Send Failed</string>
+    <string name="notification_export_success_title">Data Exported!</string>
+    <string name="notification_export_success_message">Sensor data has been exported to CSV files</string>
+    <string name="notification_export_failure_title">Data Export Failed</string>
     <string name="notification_flush_success_title">Data Flushed!</string>
     <string name="notification_flush_success_message">All sensor data has been deleted</string>
     <string name="notification_flush_failure_title">Flush Failed</string>
-    <string name="notification_phone_not_available">Phone is not available or not connected</string>
-    <string name="notification_no_data">No data to send</string>
-    <string name="notification_send_failed">Failed to send data</string>
 
     <!-- Sensor Names -->
     <string name="sensor_accelerometer">Accelerometer</string>
@@ -41,11 +36,7 @@
     <string name="sensor_heart_rate">Heart Rate</string>
     <string name="sensor_skin_temperature">Skin Temperature</string>
     <string name="sensor_eda">EDA</string>
-    <string name="sensor_location">Location</string>
     <string name="sensor_imu">IMU</string>
-    <string name="sensor_audio">Audio</string>
-    <string name="sensor_gesture">Gesture</string>
-    <string name="sensor_stress">Stress</string>
     <string name="sensor_default">Sensor</string>
 
     <!-- Samsung Health Connection -->
@@ -60,25 +51,10 @@
     <!-- Status Dashboard -->
     <string name="status_battery_format">🔋%1$d%%</string>
     <string name="status_records_format">📊%1$s</string>
-    <string name="syncing_progress_format">Syncing... %1$d%%</string>
 
-    <!-- Auto Sync Settings -->
-    <string name="auto_sync_label">Auto Sync</string>
-    <string name="auto_sync_interval_label">Threshold</string>
-    <string name="interval_none">None</string>
-    <string name="interval_5m">5m</string>
-    <string name="interval_30m">30m</string>
-    <string name="interval_1h">1h</string>
-    <string name="interval_2h">2h</string>
-    <string name="interval_6h">6h</string>
-    <string name="interval_12h">12h</string>
-    <!-- MicroEMA -->
-    <string name="ema_low">Low</string>
-    <string name="ema_high">High</string>
-    <string name="ema_dismiss">Dismiss</string>
-    <string name="ema_loading">Loading...</string>
-    <string name="ema_done">Response recorded</string>
-    <string name="ema_time_up">Time’s up</string>
-    <string name="ema_dismissed">Dismissed</string>
-    <string name="ema_finishing">Finishing</string>
+    <!-- Streaming Status -->
+    <string name="streaming_status_disconnected">Stream: off</string>
+    <string name="streaming_status_connecting">Stream: connecting…</string>
+    <string name="streaming_status_streaming">Stream: live</string>
+    <string name="streaming_status_reconnecting">Stream: reconnecting…</string>
 </resources>

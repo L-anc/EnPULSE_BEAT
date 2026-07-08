@@ -6,35 +6,24 @@ package kaist.iclab.wearabletracker
  */
 object Constants {
     /**
-     * BLE Communication Constants
+     * Real-time streaming constants (watch -> phone over the Wearable ChannelClient)
      */
-    object BLE {
-        const val KEY_SENSOR_DATA = "sensor_data_csv"
-        const val KEY_SYNC_ACK = "sync_ack"
-        const val KEY_MICRO_EMA_RESPONSE = "micro_ema_response"
-        const val KEY_MICRO_EMA_ACK = "micro_ema_ack"
-        const val KEY_MICRO_EMA_TRIGGER = "micro_ema_trigger"
-    }
-
-    /**
-     * Sensor Type Constants
-     */
-    object SensorType {
-        const val ACCELEROMETER = "Accelerometer"
-        const val PPG = "PPG"
-        const val HEART_RATE = "HeartRate"
-        const val SKIN_TEMPERATURE = "SkinTemperature"
-        const val EDA = "EDA"
-        const val LOCATION = "Location"
+    object Streaming {
+        const val CHANNEL_PATH = "/enpulse/stream"
+        const val BUFFER_CAPACITY = 4096
+        const val FLUSH_INTERVAL_MS = 200L
+        const val FLUSH_LINE_COUNT = 64
+        const val RECONNECT_BACKOFF_MIN_MS = 1_000L
+        const val RECONNECT_BACKOFF_MAX_MS = 15_000L
     }
 
     /**
      * Notification Channel Constants
      */
     object NotificationChannel {
-        const val UPLOAD_DATA_ID = "upload_data_channel"
-        const val UPLOAD_DATA_NAME = "Upload Data"
-        const val UPLOAD_DATA_DESCRIPTION = "Notifications for data upload status"
+        const val EXPORT_DATA_ID = "export_data_channel"
+        const val EXPORT_DATA_NAME = "Export Data"
+        const val EXPORT_DATA_DESCRIPTION = "Notifications for data export status"
 
         const val FLUSH_DATA_ID = "flush_data_channel"
         const val FLUSH_DATA_NAME = "Flush Data"
@@ -49,8 +38,8 @@ object Constants {
      * Notification ID Constants
      */
     object NotificationId {
-        const val UPLOAD_DATA_SUCCESS = 1001
-        const val UPLOAD_DATA_FAILURE = 1002
+        const val EXPORT_DATA_SUCCESS = 1001
+        const val EXPORT_DATA_FAILURE = 1002
         const val FLUSH_DATA_SUCCESS = 1003
         const val FLUSH_DATA_FAILURE = 1004
         const val ERROR = 2000 // Base ID for errors, will be incremented for multiple errors
@@ -71,7 +60,5 @@ object Constants {
         const val BUFFER_SIZE = 1000
         const val BATCH_SIZE = 50
         const val FLUSH_INTERVAL_MS = 2000L
-        const val SYNC_BATCH_LIMIT = 2000 // Max records per sync batch
     }
 }
-
