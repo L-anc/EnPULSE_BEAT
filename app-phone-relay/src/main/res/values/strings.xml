@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">EnPULSE Relay</string>
+
+    <string name="relay_notification_channel_name">Relay Service</string>
+    <string name="relay_notification_title">EnPULSE Relay</string>
+    <string name="relay_notification_text">Relaying watch sensor data</string>
+</resources>
