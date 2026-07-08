@@ -20,6 +20,7 @@ import kaist.iclab.wearabletracker.helpers.NotificationHelper
 import kaist.iclab.wearabletracker.repository.Result
 import kaist.iclab.wearabletracker.repository.WatchSensorRepository
 import kaist.iclab.wearabletracker.storage.SensorDataReceiver
+import kaist.iclab.wearabletracker.streaming.StreamingManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,7 +38,8 @@ class SettingsViewModel(
     private val repository: WatchSensorRepository,
     private val samsungHealthSensorInitializer: SamsungHealthSensorInitializer,
     private val applicationContext: Context,
-    private val watchDataExporter: WatchDataExporter
+    private val watchDataExporter: WatchDataExporter,
+    streamingManager: StreamingManager
 ) : ViewModel() {
     companion object {
         private val TAG = SettingsViewModel::class.simpleName
@@ -63,6 +65,10 @@ class SettingsViewModel(
     // Recording start time (null when not recording)
     private val _recordingStartTime = MutableStateFlow<Long?>(null)
     val recordingStartTime: StateFlow<Long?> = _recordingStartTime.asStateFlow()
+
+    // Live streaming state (watch -> phone)
+    val streamingState: StateFlow<StreamingManager.StreamingState> =
+        streamingManager.streamingState
 
     // Samsung Health connection state - Start button should be disabled when false
     val isSamsungHealthConnected: StateFlow<Boolean> =

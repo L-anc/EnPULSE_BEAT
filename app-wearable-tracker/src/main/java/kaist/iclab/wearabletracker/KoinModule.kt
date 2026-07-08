@@ -21,6 +21,7 @@ import kaist.iclab.wearabletracker.db.dao.BaseDao
 import kaist.iclab.wearabletracker.repository.WatchSensorRepository
 import kaist.iclab.wearabletracker.repository.WatchSensorRepositoryImpl
 import kaist.iclab.wearabletracker.storage.SensorDataReceiver
+import kaist.iclab.wearabletracker.streaming.StreamingManager
 import kaist.iclab.wearabletracker.ui.SettingsViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
@@ -227,6 +228,14 @@ val koinModule = module {
     }
 
     single {
+        StreamingManager(
+            context = androidContext(),
+            sensors = get(named("sensors")),
+            coroutineScope = get()
+        )
+    }
+
+    single {
         WatchDataExporter(
             context = androidContext(),
             sensorDataStorages = get(named("sensorDataStorages"))
@@ -248,7 +257,8 @@ val koinModule = module {
             repository = get(),
             samsungHealthSensorInitializer = get(),
             applicationContext = androidContext(),
-            watchDataExporter = get()
+            watchDataExporter = get(),
+            streamingManager = get()
         )
     }
 

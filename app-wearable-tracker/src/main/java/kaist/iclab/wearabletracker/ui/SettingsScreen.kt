@@ -15,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material.Scaffold
 import androidx.wear.compose.material.Vignette
@@ -22,8 +23,10 @@ import androidx.wear.compose.material.VignettePosition
 import kaist.iclab.tracker.permission.AndroidPermissionManager
 import kaist.iclab.tracker.sensor.controller.ControllerState
 import kaist.iclab.tracker.sensor.core.SensorState
+import kaist.iclab.wearabletracker.R
 import kaist.iclab.wearabletracker.data.DeviceInfo
 import kaist.iclab.wearabletracker.helpers.PermissionCheckResult
+import kaist.iclab.wearabletracker.streaming.StreamingManager
 import kaist.iclab.wearabletracker.helpers.PermissionHelper
 import kaist.iclab.wearabletracker.ui.components.DeviceStatusInfo
 import kaist.iclab.wearabletracker.ui.components.FlushConfirmationDialog
@@ -107,6 +110,17 @@ fun SettingsScreen(
     // Observe phone connection status
     val isPhoneConnected by settingsViewModel.isPhoneConnected.collectAsState()
 
+    // Observe live streaming state
+    val streamingState by settingsViewModel.streamingState.collectAsState()
+    val streamingStatusText = stringResource(
+        when (streamingState) {
+            StreamingManager.StreamingState.DISCONNECTED -> R.string.streaming_status_disconnected
+            StreamingManager.StreamingState.CONNECTING -> R.string.streaming_status_connecting
+            StreamingManager.StreamingState.STREAMING -> R.string.streaming_status_streaming
+            StreamingManager.StreamingState.RECONNECTING -> R.string.streaming_status_reconnecting
+        }
+    )
+
     //UI
     when {
         hasSdkPolicyError -> {
@@ -167,6 +181,7 @@ fun SettingsScreen(
                         isRecording = (isCollecting.flag == ControllerState.FLAG.RUNNING),
                         recordingStartTime = recordingStartTime,
                         isPhoneConnected = isPhoneConnected,
+                        streamingStatus = streamingStatusText,
                     )
                     Column(
                         modifier = Modifier
