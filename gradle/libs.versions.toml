@@ -1,15 +1,10 @@
 [versions]
 agp = "9.2.1"
-authKt = "3.2.6"
-firebaseMessaging = "25.0.0"
-googleServices = "4.4.3"
 kotlin = "2.2.10"
 kotlinxCoroutines = "1.10.1"
 kotlinxSerializationJson = "1.9.0"
 ksp = "2.2.10-2.0.2"
 coreKtx = "1.17.0"
-ktorClientCore = "3.3.1"
-ktorClientOkhttp = "3.3.1"
 lifecycle = "2.9.3"
 compileSdk = "36"
 minSdk = "30"
@@ -22,37 +17,18 @@ appcompat = "1.7.1"
 koin = "4.1.1"
 couchbase = "3.2.4"
 gson = "2.13.1"
-playServicesLocation = "21.3.0"
 playServicesWearables = "19.0.0"
-postgrestKt = "3.2.5"
-realtimeKt = "3.2.5"
 room = "2.8.1"
-supabaseKt = "3.2.5"
 wearCompose = "1.5.0"
 wearInput = "1.2.0"
 wearToolingPreview = "1.0.0"
-material3Android = "1.3.2"
-composeMaterial = "1.9.5"
 composeMaterialIconsExtended = "1.7.7"
-playServicesFitness = "21.3.0"
-firebase-bom = "34.2.0"
-navigationCompose = "2.9.3"
-google-services-auth = "4.4.3"
 
-androidx-credentials = "1.5.0"
-googleid = "1.1.1"
 junit = "4.13.2"
-junitVersion = "1.3.0"
-espressoCore = "3.7.0"
-material = "1.13.0"
-coreKtxVersion = "1.7.0"
 composeFoundation = "1.5.0"
 coreSplashscreen = "1.0.1"
-securityCrypto = "1.1.0-alpha06"
 
 okhttp = "5.1.0"
-retrofit = "3.0.0"
-tensorflowLite = "2.17.0"
 
 [libraries]
 #androidx
@@ -62,13 +38,12 @@ androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }
 androidx-lifecycle-service = { group = "androidx.lifecycle", name = "lifecycle-service", version.ref = "lifecycle" }
 
-#androidx advanced
-
-#compose
+#room
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 androidx-room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
-supabase-auth-kt = { module = "io.github.jan-tennert.supabase:auth-kt", version.ref = "authKt" }
+
+#compose
 compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
 compose-runtime = { group = "androidx.compose.runtime", name = "runtime" }
 compose-activity = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
@@ -78,73 +53,44 @@ compose-ui = { group = "androidx.compose.ui", name = "ui" }
 compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
 compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
-compose-navigation = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 compose-material3 = { group = "androidx.compose.material3", name = "material3" }
-compose-material = { group = "androidx.compose.material", name = "material", version.ref = "composeMaterial" }
 compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended", version.ref = "composeMaterialIconsExtended" }
 
 #wear-compose
-firebase-messaging = { module = "com.google.firebase:firebase-messaging", version.ref = "firebaseMessaging" }
-google-services = { module = "com.google.gms:google-services", version.ref = "googleServices" }
-kotlinx-coroutines-play-services = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "kotlinxCoroutines" }
-kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
-ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktorClientCore" }
-ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktorClientOkhttp" }
-postgrest-kt = { module = "io.github.jan-tennert.supabase:postgrest-kt", version.ref = "postgrestKt" }
-functions-kt = { module = "io.github.jan-tennert.supabase:functions-kt", version.ref = "supabaseKt" }
-realtime-kt = { module = "io.github.jan-tennert.supabase:realtime-kt", version.ref = "realtimeKt" }
-supabase-kt = { module = "io.github.jan-tennert.supabase:supabase-kt", version.ref = "supabaseKt" }
 wear-compose-material = { group = "androidx.wear.compose", name = "compose-material", version.ref = "wearCompose" }
-wear-compose-ui-tooling = { group = "androidx.wear.compose", name = "compose-ui-tooling", version.ref = "wearCompose" }
 wear-input = { group = "androidx.wear", name = "wear-input", version.ref = "wearInput" }
 wear-tooling-preview = { group = "androidx.wear", name = "wear-tooling-preview", version.ref = "wearToolingPreview" }
+androidx-compose-foundation = { group = "androidx.wear.compose", name = "compose-foundation", version.ref = "composeFoundation" }
+androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "coreSplashscreen" }
+
+#coroutines / serialization
+kotlinx-coroutines-play-services = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "kotlinxCoroutines" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 
 #koin
 koin-core = { module = "io.insert-koin:koin-core" }
 koin-android = { module = "io.insert-koin:koin-android", version.ref = "koin" }
 koin-androidx-compose = { module = "io.insert-koin:koin-androidx-compose", version.ref = "koin" }
 
-firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebase-bom" }
-
-# Google Authentication
-firebase-auth = { module = "com.google.firebase:firebase-auth" }
-androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "androidx-credentials" }
-androidx-credentials-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "androidx-credentials" }
-googleid = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleid" }
-
-android-gms-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
+#wearable data layer
 android-gms-wearable = { group = "com.google.android.gms", name = "play-services-wearable", version.ref = "playServicesWearables" }
 
-
+#storage
 couchbase = { group = "com.couchbase.lite", name = "couchbase-lite-android-ktx", version.ref = "couchbase" }
 gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
 
+#network
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
-retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
-retrofit-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "retrofit" }
-tensorflow-lite = { group = "org.tensorflow", name = "tensorflow-lite", version.ref = "tensorflowLite" }
 
 # plugin Dependencies of the included build-logic
 android-gradle-plugin = { group = "com.android.tools.build", name = "gradle", version.ref = "agp" }
 kotlin-gradle-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
 ksp-gradle-plugin = { group = "com.google.devtools.ksp", name = "com.google.devtools.ksp.gradle.plugin", version.ref = "ksp" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
-androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
-androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
-material = { group = "com.google.android.material", name = "material", version.ref = "material" }
-core-ktx = { group = "androidx.test", name = "core-ktx", version.ref = "coreKtxVersion" }
 androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
-androidx-compose-foundation = { group = "androidx.wear.compose", name = "compose-foundation", version.ref = "composeFoundation" }
-androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "coreSplashscreen" }
-androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
-
 
 [bundles]
-#firebase = ["firebase-analytics", "firebase-cloud-messaging"]
-#androidx-lifecycle = ["androidx-lifecycle-runtime-ktx", "androidx-lifecycle-viewmodel-ktx"]
-#androidx-navigation = ["navigation-fragment-ktx", "navigation-ui-ktx"]
-#coroutine = ["kotlinx-coroutines-android", "kotlinx-coroutines-core"]
 compose = [
     "compose-activity",
     "compose-runtime",
@@ -154,29 +100,13 @@ compose = [
     "compose-ui-graphics",
     "compose-ui-tooling",
     "compose-ui-tooling-preview",
-    "compose-navigation",
     "compose-material3",
     "compose-material-icons-extended",
-    #    "compose-compiler"
-]
-compose-wear = [
-    "wear-compose-material",
-    "wear-compose-ui-tooling",
-    "wear-tooling-preview",
 ]
 androidx = [
-    #    "androidx-junit",
-    #    "androidx-espresso-core",
     "androidx-core-ktx",
     "androidx-appcompat",
     "androidx-lifecycle-runtime-ktx",
-    #    "androidx-navigation-runtime-ktx",
-]
-auth = [
-    "firebase-auth",
-    "androidx-credentials",
-    "androidx-credentials-auth",
-    "googleid",
 ]
 koin = [
     "koin-android",
@@ -190,4 +120,3 @@ jetbrainsKotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "k
 androidLibrary = { id = "com.android.library", version.ref = "agp" }
 kotlinCompose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-googleServices = { id = "com.google.gms.google-services", version.ref = "google-services-auth" }

@@ -1,5 +1,7 @@
 plugins {
     id("dev.iclab.android.basic.library")
+    /* Parceler runtime (required by the Samsung Health Data SDK aar) */
+    id("kotlin-parcelize")
     alias(libs.plugins.kotlinSerialization)
 }
 
