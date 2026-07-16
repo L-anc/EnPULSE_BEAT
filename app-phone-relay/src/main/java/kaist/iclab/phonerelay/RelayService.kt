@@ -65,7 +65,12 @@ class RelayService : Service() {
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
         )
 
-        wsClient.start(SettingsStore(this).serverUrl)
+        val settings = SettingsStore(this)
+        if (settings.relayEnabled) {
+            wsClient.start(settings.serverUrl)
+        } else {
+            wsClient.stop()
+        }
 
         if (forwardJob?.isActive != true) {
             forwardJob = scope.launch {

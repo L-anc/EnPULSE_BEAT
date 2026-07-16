@@ -22,14 +22,20 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
@@ -54,9 +60,24 @@ class MainActivity : ComponentActivity() {
         setContent {
             MaterialTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    RelayScreen()
+                    MainScreen()
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun MainScreen() {
+    var tab by rememberSaveable { mutableIntStateOf(0) }
+    Column(modifier = Modifier.fillMaxSize()) {
+        TabRow(selectedTabIndex = tab) {
+            Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Relay") })
+            Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Debug") })
+        }
+        when (tab) {
+            0 -> RelayScreen()
+            1 -> DebugScreen()
         }
     }
 }
@@ -66,6 +87,7 @@ fun RelayScreen() {
     val context = LocalContext.current
     val settings = remember { SettingsStore(context) }
     var url by remember { mutableStateOf(settings.serverUrl) }
+    var uploadEnabled by remember { mutableStateOf(settings.relayEnabled) }
 
     val watchConnected by RelayHub.watchConnected.collectAsState()
     val linesReceived by RelayHub.linesReceived.collectAsState()
@@ -104,6 +126,23 @@ fun RelayScreen() {
             modifier = Modifier.fillMaxWidth()
         )
 
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Upload to server", style = MaterialTheme.typography.bodyLarge)
+            Switch(
+                checked = uploadEnabled,
+                onCheckedChange = { enabled ->
+                    uploadEnabled = enabled
+                    settings.relayEnabled = enabled
+                    // Re-deliver onStartCommand so the running service applies the change
+                    if (RelayService.isRunning) RelayService.start(context)
+                }
+            )
+        }
+
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(
                 onClick = {
@@ -129,10 +168,11 @@ fun RelayScreen() {
         StatusRow("Watch stream", if (watchConnected) "connected" else "not connected")
         StatusRow(
             "Server",
-            when (wsState) {
-                WsClient.State.CONNECTED -> "connected"
-                WsClient.State.CONNECTING -> "connecting…"
-                WsClient.State.DISCONNECTED -> "disconnected"
+            when {
+                !uploadEnabled -> "upload off"
+                wsState == WsClient.State.CONNECTED -> "connected"
+                wsState == WsClient.State.CONNECTING -> "connecting…"
+                else -> "disconnected"
             }
         )
         StatusRow("Throughput", "$linesPerSec lines/s ($linesReceived total)")

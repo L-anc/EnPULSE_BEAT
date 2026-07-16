@@ -50,6 +50,11 @@ class WsClient(private val scope: CoroutineScope) {
         this.url = url
         shouldRun = true
         backoffMs = BACKOFF_MIN_MS
+        // Restart-safe: drop any existing socket/reconnect before opening a new one
+        reconnectJob?.cancel()
+        reconnectJob = null
+        webSocket?.close(1000, "restart")
+        webSocket = null
         connect()
     }
 
@@ -99,11 +104,14 @@ class WsClient(private val scope: CoroutineScope) {
         }
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+            // Ignore events from a socket that has already been replaced
+            if (webSocket !== this@WsClient.webSocket) return
             Log.w(TAG, "WebSocket failure: ${t.message}")
             scheduleReconnect()
         }
 
         override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+            if (webSocket !== this@WsClient.webSocket) return
             if (shouldRun) scheduleReconnect() else _state.value = State.DISCONNECTED
         }
     }
