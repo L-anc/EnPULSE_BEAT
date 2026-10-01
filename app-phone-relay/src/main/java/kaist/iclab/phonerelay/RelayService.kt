@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.IBinder
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -23,6 +24,7 @@ import kotlinx.coroutines.launch
  */
 class RelayService : Service() {
     companion object {
+        private const val TAG = "RelayService"
         private const val NOTIFICATION_CHANNEL_ID = "relay_service"
         private const val NOTIFICATION_ID = 1
 
@@ -58,12 +60,21 @@ class RelayService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        startForeground(
-            NOTIFICATION_ID,
-            buildNotification(),
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE or
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-        )
+        try {
+            startForeground(
+                NOTIFICATION_ID,
+                buildNotification(),
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE or
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+            )
+        } catch (e: Exception) {
+            // Background FGS start restriction (e.g. a sticky restart or a watch-triggered
+            // start while the app is in the background): bail out instead of crashing the
+            // process. The user can start the relay from the UI.
+            Log.w(TAG, "Could not enter foreground: ${e.message}")
+            stopSelf()
+            return START_NOT_STICKY
+        }
 
         val settings = SettingsStore(this)
         if (settings.relayEnabled) {

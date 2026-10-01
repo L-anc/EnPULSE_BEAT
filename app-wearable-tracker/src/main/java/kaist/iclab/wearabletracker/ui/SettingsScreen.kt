@@ -195,9 +195,10 @@ fun SettingsScreen(
                                 sensorStateFlow = sensorState[name]!!,
                                 updateStatus = { status ->
                                     if (status) {
-                                        androidPermissionManager.request(sensorMap[name]!!.permissions)
+                                        settingsViewModel.enableWhenGranted(name, androidPermissionManager)
+                                    } else {
+                                        settingsViewModel.update(name, false)
                                     }
-                                    settingsViewModel.update(name, status)
                                 }
                             )
                         }

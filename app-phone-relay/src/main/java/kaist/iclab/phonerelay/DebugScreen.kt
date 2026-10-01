@@ -1,5 +1,6 @@
 package kaist.iclab.phonerelay
 
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -30,9 +31,14 @@ private const val STALL_THRESHOLD_MS = 3_000L
  */
 @Composable
 fun DebugScreen() {
+    val activity = LocalActivity.current
     DisposableEffect(Unit) {
         DebugFeed.start()
-        onDispose { DebugFeed.stop() }
+        onDispose {
+            // Keep the feed (and its buffers) alive across rotation; the recreated
+            // screen's start() is then a no-op instead of clearing the charts.
+            if (activity?.isChangingConfigurations != true) DebugFeed.stop()
+        }
     }
 
     val frame by DebugFeed.frame.collectAsState()

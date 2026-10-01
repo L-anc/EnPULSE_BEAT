@@ -12,6 +12,8 @@ import androidx.lifecycle.viewModelScope
 import com.google.android.gms.wearable.Node
 import com.google.android.gms.wearable.Wearable
 import kaist.iclab.tracker.listener.SamsungHealthSensorInitializer
+import kaist.iclab.tracker.permission.PermissionManager
+import kaist.iclab.tracker.permission.PermissionState
 import kaist.iclab.tracker.sensor.controller.BackgroundController
 import kaist.iclab.tracker.sensor.controller.ControllerState
 import kaist.iclab.wearabletracker.data.DeviceInfo
@@ -22,13 +24,16 @@ import kaist.iclab.wearabletracker.repository.WatchSensorRepository
 import kaist.iclab.wearabletracker.storage.SensorDataReceiver
 import kaist.iclab.wearabletracker.streaming.StreamingManager
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -46,6 +51,7 @@ class SettingsViewModel(
         private const val RECORD_COUNT_REFRESH_MS = 10_000L // 10 seconds
         private const val BATTERY_REFRESH_MS = 30_000L // 30 seconds
         private const val PHONE_STATUS_REFRESH_MS = 15_000L // 15 seconds
+        private const val PERMISSION_WAIT_MS = 120_000L // 2 minutes to answer the dialog
     }
 
     // Total record count across all sensors
@@ -145,8 +151,35 @@ class SettingsViewModel(
             return
         }
         if (status) sensor.enable()
-        else sensor.disable()
+        else {
+            permissionJobs.remove(sensorName)?.cancel()
+            sensor.disable()
+        }
     }
+
+    /**
+     * Enable a sensor once its permissions are granted. The permission dialog is
+     * asynchronous, so calling enable() right after request() sees the pre-grant
+     * state and leaves the sensor disabled; this waits for the grant instead.
+     */
+    fun enableWhenGranted(sensorName: String, permissionManager: PermissionManager) {
+        val sensor = sensorMap[sensorName] ?: run {
+            Log.w(TAG, "Sensor not found: $sensorName")
+            return
+        }
+        permissionManager.request(sensor.permissions)
+        sensor.enable() // Enables immediately if already granted, else marks "Permission required"
+        permissionJobs[sensorName]?.cancel()
+        permissionJobs[sensorName] = viewModelScope.launch {
+            val granted = withTimeoutOrNull(PERMISSION_WAIT_MS) {
+                permissionManager.getPermissionFlow(sensor.permissions)
+                    .first { states -> states.values.all { it == PermissionState.GRANTED } }
+            }
+            if (granted != null) sensor.enable()
+        }
+    }
+
+    private val permissionJobs = mutableMapOf<String, Job>()
 
     fun getDeviceInfo(context: Context, callback: (DeviceInfo) -> Unit) {
         Wearable.getNodeClient(context).localNode
