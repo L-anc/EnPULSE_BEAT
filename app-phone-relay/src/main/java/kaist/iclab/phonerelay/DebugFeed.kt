@@ -82,6 +82,9 @@ object DebugFeed {
         "acc.x", "acc.y", "acc.z",
         "imu.accX", "imu.accY", "imu.accZ",
         "imu.gyroX", "imu.gyroY", "imu.gyroZ",
+        "hr.bpm", "hr.ibi",
+        "temp.object", "temp.ambient",
+        "eda.sc",
     ).associateWith { RingBuffer() }
 
     data class Latest(
@@ -170,26 +173,48 @@ object DebugFeed {
                 channels["imu.gyroZ"]!!.add(now, data["gyroZ"]!!.jsonPrimitive.float)
             }
 
-            "HeartRate" -> lastDataPoint(data)?.let { p ->
-                _latest.value = _latest.value.copy(
-                    hr = p["hr"]?.jsonPrimitive?.int,
-                    hrStatus = p["hrStatus"]?.jsonPrimitive?.int,
-                    lastIbi = p["ibi"]?.jsonArray?.lastOrNull()?.jsonPrimitive?.int
-                        ?: _latest.value.lastIbi
-                )
+            "HeartRate" -> {
+                forEachDataPoint(data) { p ->
+                    // 0 means "no reading yet"; charting it would wreck the autoscale
+                    p["hr"]?.jsonPrimitive?.int?.takeIf { it > 0 }
+                        ?.let { channels["hr.bpm"]!!.add(now, it.toFloat()) }
+                    p["ibi"]?.jsonArray?.forEach { ibi ->
+                        ibi.jsonPrimitive.int.takeIf { it > 0 }
+                            ?.let { channels["hr.ibi"]!!.add(now, it.toFloat()) }
+                    }
+                }
+                lastDataPoint(data)?.let { p ->
+                    _latest.value = _latest.value.copy(
+                        hr = p["hr"]?.jsonPrimitive?.int,
+                        hrStatus = p["hrStatus"]?.jsonPrimitive?.int,
+                        lastIbi = p["ibi"]?.jsonArray?.lastOrNull()?.jsonPrimitive?.int
+                            ?: _latest.value.lastIbi
+                    )
+                }
             }
 
-            "SkinTemperature" -> lastDataPoint(data)?.let { p ->
-                _latest.value = _latest.value.copy(
-                    objTemp = p["objectTemperature"]?.jsonPrimitive?.float,
-                    ambTemp = p["ambientTemperature"]?.jsonPrimitive?.float
-                )
+            "SkinTemperature" -> {
+                forEachDataPoint(data) { p ->
+                    channels["temp.object"]!!.add(now, p["objectTemperature"]!!.jsonPrimitive.float)
+                    channels["temp.ambient"]!!.add(now, p["ambientTemperature"]!!.jsonPrimitive.float)
+                }
+                lastDataPoint(data)?.let { p ->
+                    _latest.value = _latest.value.copy(
+                        objTemp = p["objectTemperature"]?.jsonPrimitive?.float,
+                        ambTemp = p["ambientTemperature"]?.jsonPrimitive?.float
+                    )
+                }
             }
 
-            "EDA" -> lastDataPoint(data)?.let { p ->
-                _latest.value = _latest.value.copy(
-                    eda = p["skinConductance"]?.jsonPrimitive?.float
-                )
+            "EDA" -> {
+                forEachDataPoint(data) { p ->
+                    channels["eda.sc"]!!.add(now, p["skinConductance"]!!.jsonPrimitive.float)
+                }
+                lastDataPoint(data)?.let { p ->
+                    _latest.value = _latest.value.copy(
+                        eda = p["skinConductance"]?.jsonPrimitive?.float
+                    )
+                }
             }
         }
     }

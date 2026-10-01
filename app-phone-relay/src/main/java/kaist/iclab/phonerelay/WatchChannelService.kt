@@ -36,6 +36,7 @@ class WatchChannelService : WearableListenerService() {
 
         RelayHub.onWatchConnected(true)
 
+        val settings = SettingsStore(this)
         val channelClient = Wearable.getChannelClient(this)
         try {
             val inputStream = com.google.android.gms.tasks.Tasks.await(
@@ -44,13 +45,17 @@ class WatchChannelService : WearableListenerService() {
             BufferedReader(InputStreamReader(inputStream, Charsets.UTF_8)).use { reader ->
                 var line = reader.readLine()
                 while (line != null) {
-                    if (line.isNotBlank()) RelayHub.publish(line)
+                    if (line.isNotBlank()) {
+                        RelayHub.publish(line)
+                        if (settings.recordEnabled) LocalRecorder.record(this, line)
+                    }
                     line = reader.readLine()
                 }
             }
         } catch (e: Exception) {
             Log.w(TAG, "Watch stream ended: ${e.message}")
         } finally {
+            LocalRecorder.closeFiles()
             RelayHub.onWatchConnected(false)
         }
     }

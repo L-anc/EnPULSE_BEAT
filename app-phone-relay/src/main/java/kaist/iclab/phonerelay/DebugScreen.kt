@@ -58,6 +58,18 @@ fun DebugScreen() {
     val imuGyroTraces = remember(frame) {
         listOf("gyroX", "gyroY", "gyroZ").map { it to DebugFeed.channels["imu.$it"]!!.snapshotValues() }
     }
+    val hrTraces = remember(frame) {
+        listOf("bpm" to DebugFeed.channels["hr.bpm"]!!.snapshotValues())
+    }
+    val ibiTraces = remember(frame) {
+        listOf("ms" to DebugFeed.channels["hr.ibi"]!!.snapshotValues())
+    }
+    val tempTraces = remember(frame) {
+        listOf("object", "ambient").map { it to DebugFeed.channels["temp.$it"]!!.snapshotValues() }
+    }
+    val edaTraces = remember(frame) {
+        listOf("µS" to DebugFeed.channels["eda.sc"]!!.snapshotValues())
+    }
 
     val now = System.currentTimeMillis()
     val hasData = lastSeen.isNotEmpty()
@@ -134,6 +146,10 @@ fun DebugScreen() {
         WaveformChart("Accelerometer (m/s²)", accTraces)
         WaveformChart("IMU accel", imuAccTraces)
         WaveformChart("IMU gyro", imuGyroTraces)
+        WaveformChart("Heart rate", hrTraces)
+        WaveformChart("IBI", ibiTraces)
+        WaveformChart("Skin temp (°C)", tempTraces)
+        WaveformChart("EDA", edaTraces)
     }
 }
 

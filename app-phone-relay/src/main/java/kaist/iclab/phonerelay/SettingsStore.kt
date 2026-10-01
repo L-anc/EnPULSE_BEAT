@@ -8,6 +8,7 @@ class SettingsStore(context: Context) {
         private const val PREFS_NAME = "relay_settings"
         private const val KEY_SERVER_URL = "server_url"
         private const val KEY_RELAY_ENABLED = "relay_enabled"
+        private const val KEY_RECORD_ENABLED = "record_enabled"
         const val DEFAULT_SERVER_URL = "ws://192.168.0.10:8765"
     }
 
@@ -24,5 +25,12 @@ class SettingsStore(context: Context) {
         get() = prefs.getBoolean(KEY_RELAY_ENABLED, true)
         set(value) {
             prefs.edit().putBoolean(KEY_RELAY_ENABLED, value).apply()
+        }
+
+    /** Whether received watch data is recorded to local CSV files for export. */
+    var recordEnabled: Boolean
+        get() = prefs.getBoolean(KEY_RECORD_ENABLED, true)
+        set(value) {
+            prefs.edit().putBoolean(KEY_RECORD_ENABLED, value).apply()
         }
 }

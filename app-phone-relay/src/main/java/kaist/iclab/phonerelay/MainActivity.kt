@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +27,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -33,6 +35,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -42,7 +45,10 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -88,10 +94,15 @@ fun RelayScreen() {
     val settings = remember { SettingsStore(context) }
     var url by remember { mutableStateOf(settings.serverUrl) }
     var uploadEnabled by remember { mutableStateOf(settings.relayEnabled) }
+    var recordEnabled by remember { mutableStateOf(settings.recordEnabled) }
+    var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     val watchConnected by RelayHub.watchConnected.collectAsState()
     val linesReceived by RelayHub.linesReceived.collectAsState()
     val latestBySensor by RelayHub.latestBySensor.collectAsState()
+    val recorder by LocalRecorder.status.collectAsState()
+    val exportState by CsvExporter.state.collectAsState()
 
     // Service state is exposed via statics; poll them for the UI
     var relayRunning by remember { mutableStateOf(RelayService.isRunning) }
@@ -105,6 +116,7 @@ fun RelayScreen() {
             val count = RelayHub.linesReceived.value
             linesPerSec = count - lastCount
             lastCount = count
+            withContext(Dispatchers.IO) { LocalRecorder.refreshStored(context) }
             delay(1000)
         }
     }
@@ -179,6 +191,60 @@ fun RelayScreen() {
 
         HorizontalDivider()
 
+        Text("Local recording", style = MaterialTheme.typography.titleMedium)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Save to phone", style = MaterialTheme.typography.bodyLarge)
+            Switch(
+                checked = recordEnabled,
+                onCheckedChange = { enabled ->
+                    recordEnabled = enabled
+                    settings.recordEnabled = enabled
+                }
+            )
+        }
+        StatusRow(
+            "Session",
+            recorder.sessionId?.let { "$it (${recorder.sessionRows} rows)" } ?: "none"
+        )
+        StatusRow(
+            "Stored",
+            "${recorder.storedSessions} sessions · %.1f MB".format(recorder.storedBytes / 1_000_000f)
+        )
+        val exporting = exportState == CsvExporter.State.Running
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(
+                onClick = { CsvExporter.start(context) },
+                enabled = !exporting && recorder.storedSessions > 0
+            ) {
+                Text("Export CSV")
+            }
+            OutlinedButton(
+                onClick = { showDeleteDialog = true },
+                enabled = !exporting && recorder.storedSessions > 0
+            ) {
+                Text("Delete local data")
+            }
+        }
+        when (val state = exportState) {
+            CsvExporter.State.Idle -> {}
+            CsvExporter.State.Running -> Text("Exporting…", style = MaterialTheme.typography.bodySmall)
+            is CsvExporter.State.Done -> Text(
+                "Exported ${state.files} files to Download/${CsvExporter.EXPORT_FOLDER}",
+                style = MaterialTheme.typography.bodySmall
+            )
+            is CsvExporter.State.Failed -> Text(
+                "Export failed: ${state.message}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
+
+        HorizontalDivider()
+
         Text("Live values", style = MaterialTheme.typography.titleMedium)
         if (latestBySensor.isEmpty()) {
             Text(
@@ -198,6 +264,32 @@ fun RelayScreen() {
                 }
             }
         }
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete local data?") },
+            text = {
+                Text(
+                    "This deletes all ${recorder.storedSessions} recorded sessions from the app. " +
+                            "Files already exported to Downloads are kept."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteDialog = false
+                    scope.launch(Dispatchers.IO) { LocalRecorder.deleteAll(context) }
+                }) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 
