@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Upload
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.runtime.Composable
@@ -28,7 +28,7 @@ import kaist.iclab.wearabletracker.theme.AppSpacing
 
 @Composable
 fun SettingController(
-    upload: () -> Unit,
+    export: () -> Unit,
     flush: () -> Unit,
     startLogging: () -> Unit,
     stopLogging: () -> Unit,
@@ -46,9 +46,9 @@ fun SettingController(
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(
-            icon = Icons.Default.Upload,
-            onClick = upload,
-            contentDescription = stringResource(R.string.upload_data),
+            icon = Icons.Default.Download,
+            onClick = export,
+            contentDescription = stringResource(R.string.export_data),
             backgroundColor = MaterialTheme.colors.secondary,
             buttonSize = AppSizes.iconButtonSmall,
             iconSize = AppSizes.iconSmall

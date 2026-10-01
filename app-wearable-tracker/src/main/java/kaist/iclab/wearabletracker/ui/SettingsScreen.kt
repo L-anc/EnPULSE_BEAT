@@ -15,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material.Scaffold
 import androidx.wear.compose.material.Vignette
@@ -22,10 +23,11 @@ import androidx.wear.compose.material.VignettePosition
 import kaist.iclab.tracker.permission.AndroidPermissionManager
 import kaist.iclab.tracker.sensor.controller.ControllerState
 import kaist.iclab.tracker.sensor.core.SensorState
+import kaist.iclab.wearabletracker.R
 import kaist.iclab.wearabletracker.data.DeviceInfo
 import kaist.iclab.wearabletracker.helpers.PermissionCheckResult
+import kaist.iclab.wearabletracker.streaming.StreamingManager
 import kaist.iclab.wearabletracker.helpers.PermissionHelper
-import kaist.iclab.wearabletracker.ui.components.AutoSyncSettings
 import kaist.iclab.wearabletracker.ui.components.DeviceStatusInfo
 import kaist.iclab.wearabletracker.ui.components.FlushConfirmationDialog
 import kaist.iclab.wearabletracker.ui.components.PermissionPermanentlyDeniedDialog
@@ -55,7 +57,7 @@ fun SettingsScreen(
 
     /**
      * Helper function to handle notification permission check and execute action if granted.
-     * Reduces code duplication across different features (upload, flush, startLogging).
+     * Reduces code duplication across different features (export, flush, startLogging).
      */
     fun handleNotificationPermissionCheck(onGranted: () -> Unit) {
         when (PermissionHelper.checkNotificationPermission(context, androidPermissionManager)) {
@@ -94,29 +96,30 @@ fun SettingsScreen(
         settingsViewModel.getDeviceInfo(context) { receivedDeviceInfo ->
             deviceInfo = receivedDeviceInfo
         }
-        // Load last sync timestamp on startup
-        settingsViewModel.refreshLastSyncTimestamp()
 
         // Check notification permission at app startup (will request if needed, but won't show dialog for permanent denial)
         // The permanent denial dialog will only show when user tries to perform an action
         PermissionHelper.checkNotificationPermission(context, androidPermissionManager)
     }
 
-    // Observe last sync timestamp
-    val lastSyncTimestamp by settingsViewModel.lastSyncTimestamp.collectAsState()
-
     // Observe dashboard data
     val totalRecordCount by settingsViewModel.totalRecordCount.collectAsState()
     val batteryLevel by settingsViewModel.batteryLevel.collectAsState()
     val recordingStartTime by settingsViewModel.recordingStartTime.collectAsState()
-    val syncProgress by settingsViewModel.syncProgress.collectAsState()
 
     // Observe phone connection status
     val isPhoneConnected by settingsViewModel.isPhoneConnected.collectAsState()
 
-    // Observe auto-sync data
-    val autoSyncEnabled by settingsViewModel.autoSyncEnabled.collectAsState()
-    val autoSyncInterval by settingsViewModel.autoSyncInterval.collectAsState()
+    // Observe live streaming state
+    val streamingState by settingsViewModel.streamingState.collectAsState()
+    val streamingStatusText = stringResource(
+        when (streamingState) {
+            StreamingManager.StreamingState.DISCONNECTED -> R.string.streaming_status_disconnected
+            StreamingManager.StreamingState.CONNECTING -> R.string.streaming_status_connecting
+            StreamingManager.StreamingState.STREAMING -> R.string.streaming_status_streaming
+            StreamingManager.StreamingState.RECONNECTING -> R.string.streaming_status_reconnecting
+        }
+    )
 
     //UI
     when {
@@ -147,9 +150,9 @@ fun SettingsScreen(
                         .padding(top = 10.dp),
                 ) {
                     SettingController(
-                        upload = {
+                        export = {
                             handleNotificationPermissionCheck {
-                                settingsViewModel.upload()
+                                settingsViewModel.export(context)
                             }
                         },
                         flush = {
@@ -173,13 +176,12 @@ fun SettingsScreen(
                     )
                     DeviceStatusInfo(
                         deviceInfo = deviceInfo,
-                        lastSyncTimestamp = lastSyncTimestamp,
                         totalRecordCount = totalRecordCount,
                         batteryLevel = batteryLevel,
                         isRecording = (isCollecting.flag == ControllerState.FLAG.RUNNING),
                         recordingStartTime = recordingStartTime,
-                        syncProgress = syncProgress,
                         isPhoneConnected = isPhoneConnected,
+                        streamingStatus = streamingStatusText,
                     )
                     Column(
                         modifier = Modifier
@@ -187,24 +189,16 @@ fun SettingsScreen(
                             .verticalScroll(rememberScrollState())
                             .padding(bottom = 24.dp)
                     ) {
-                        // Auto-Sync Settings
-                        AutoSyncSettings(
-                            enabled = autoSyncEnabled,
-                            onEnabledChange = { settingsViewModel.setAutoSyncEnabled(it) },
-                            intervalMs = autoSyncInterval,
-                            onIntervalChange = { settingsViewModel.setAutoSyncInterval(it) }
-                        )
-
-
                         availableSensors.forEach { (name, _) ->
                             SensorToggleChip(
                                 sensorId = name,
                                 sensorStateFlow = sensorState[name]!!,
                                 updateStatus = { status ->
                                     if (status) {
-                                        androidPermissionManager.request(sensorMap[name]!!.permissions)
+                                        settingsViewModel.enableWhenGranted(name, androidPermissionManager)
+                                    } else {
+                                        settingsViewModel.update(name, false)
                                     }
-                                    settingsViewModel.update(name, status)
                                 }
                             )
                         }
@@ -234,4 +228,3 @@ fun SettingsScreen(
         }
     )
 }
-

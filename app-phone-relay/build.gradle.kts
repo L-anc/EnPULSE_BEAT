@@ -3,23 +3,20 @@ plugins {
     alias(libs.plugins.jetbrainsKotlinAndroid)
     alias(libs.plugins.kotlinCompose)
     alias(libs.plugins.kotlinSerialization)
-
-    id("com.google.devtools.ksp")
 }
 
 android {
-    namespace = "kaist.iclab.wearabletracker"
+    namespace = "kaist.iclab.phonerelay"
     compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {
+        // Must match the watch app's applicationId: the Wearable Data Layer only
+        // routes channels between apps with the same package name.
         applicationId = "kaist.iclab.trackerSystem"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
-        ksp {
-            arg("room.schemaLocation", "$projectDir/schemas")
-        }
     }
 
     signingConfigs {
@@ -45,7 +42,6 @@ android {
         }
     }
 
-
     kotlin {
         jvmToolchain(17)
     }
@@ -58,45 +54,23 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     buildToolsVersion = libs.versions.buildTools.get()
-
 }
 
 dependencies {
-
+    implementation(libs.androidx.core.ktx)
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
-    implementation(libs.compose.ui.graphics)
-    implementation(libs.compose.ui.tooling.preview)
-    implementation(libs.wear.compose.material)
-    implementation(libs.wear.input)
-    implementation(libs.androidx.compose.foundation)
-    implementation(libs.wear.tooling.preview)
+    implementation(libs.compose.material3)
     implementation(libs.compose.activity)
-    implementation(libs.androidx.core.splashscreen)
-    androidTestImplementation(platform(libs.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.compose.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
+    implementation(libs.compose.lifecycle.viewmodel)
 
-    // RoomDB
-    implementation(libs.androidx.room.runtime)
-    ksp(libs.androidx.room.compiler)
-    implementation(libs.gson) // for converter
-
-    // Google Play Services
+    // Wearable Data Layer (channel from the watch)
     implementation(libs.android.gms.wearable)
     implementation(libs.kotlinx.coroutines.play.services)
 
-    // koin
-    implementation(libs.koin.android)
-    implementation(libs.koin.androidx.compose)
+    // WebSocket relay to the lab server
+    implementation(libs.okhttp)
 
-    // icons
-    implementation(libs.compose.material.icons.extended)
-
-    // tracker library
-    implementation(project(":tracker-library"))
-
-    // kotlinx serialization (for JSON handling in BLE communication)
+    // Lazy parsing of stream lines for the live-values display
     implementation(libs.kotlinx.serialization.json)
 }

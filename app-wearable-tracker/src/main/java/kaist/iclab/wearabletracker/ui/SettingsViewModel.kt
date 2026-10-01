@@ -12,75 +12,57 @@ import androidx.lifecycle.viewModelScope
 import com.google.android.gms.wearable.Node
 import com.google.android.gms.wearable.Wearable
 import kaist.iclab.tracker.listener.SamsungHealthSensorInitializer
+import kaist.iclab.tracker.permission.PermissionManager
+import kaist.iclab.tracker.permission.PermissionState
 import kaist.iclab.tracker.sensor.controller.BackgroundController
 import kaist.iclab.tracker.sensor.controller.ControllerState
-import kaist.iclab.wearabletracker.data.AutoSyncManager
 import kaist.iclab.wearabletracker.data.DeviceInfo
-import kaist.iclab.wearabletracker.data.PhoneCommunicationManager
+import kaist.iclab.wearabletracker.data.WatchDataExporter
 import kaist.iclab.wearabletracker.helpers.NotificationHelper
 import kaist.iclab.wearabletracker.repository.Result
 import kaist.iclab.wearabletracker.repository.WatchSensorRepository
 import kaist.iclab.wearabletracker.storage.SensorDataReceiver
+import kaist.iclab.wearabletracker.streaming.StreamingManager
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 class SettingsViewModel(
     private val sensorController: BackgroundController,
     private val sensorDataReceiver: SensorDataReceiver,
-    private val phoneCommunicationManager: PhoneCommunicationManager,
     private val repository: WatchSensorRepository,
     private val samsungHealthSensorInitializer: SamsungHealthSensorInitializer,
     private val applicationContext: Context,
-    private val autoSyncManager: AutoSyncManager
+    private val watchDataExporter: WatchDataExporter,
+    streamingManager: StreamingManager
 ) : ViewModel() {
     companion object {
         private val TAG = SettingsViewModel::class.simpleName
         private const val RECORD_COUNT_REFRESH_MS = 10_000L // 10 seconds
         private const val BATTERY_REFRESH_MS = 30_000L // 30 seconds
         private const val PHONE_STATUS_REFRESH_MS = 15_000L // 15 seconds
+        private const val PERMISSION_WAIT_MS = 120_000L // 2 minutes to answer the dialog
     }
-
-    // StateFlow for last sync timestamp
-    private val _lastSyncTimestamp = MutableStateFlow<Long?>(null)
-    val lastSyncTimestamp: StateFlow<Long?> = _lastSyncTimestamp.asStateFlow()
 
     // Total record count across all sensors
     private val _totalRecordCount = MutableStateFlow(0)
     val totalRecordCount: StateFlow<Int> = _totalRecordCount.asStateFlow()
-
-    // Sync progress: 0.0 to 1.0, null if not syncing
-    val syncProgress: StateFlow<Float?> = phoneCommunicationManager.syncProgress
 
     // Phone connection status
     private val _isPhoneConnected = MutableStateFlow(false)
     val isPhoneConnected: StateFlow<Boolean> = _isPhoneConnected.asStateFlow()
 
     private val nodeClient by lazy { Wearable.getNodeClient(applicationContext) }
-
-    // Auto-sync settings
-    val autoSyncEnabled: StateFlow<Boolean> = repository.autoSyncEnabledFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
-
-    val autoSyncInterval: StateFlow<Long> = repository.autoSyncIntervalFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0L)
-
-    fun setAutoSyncEnabled(enabled: Boolean) {
-        repository.setAutoSyncEnabled(enabled)
-    }
-
-    fun setAutoSyncInterval(intervalMs: Long) {
-        repository.setAutoSyncInterval(intervalMs)
-    }
 
     // Battery level (0-100)
     private val _batteryLevel = MutableStateFlow(-1)
@@ -89,6 +71,10 @@ class SettingsViewModel(
     // Recording start time (null when not recording)
     private val _recordingStartTime = MutableStateFlow<Long?>(null)
     val recordingStartTime: StateFlow<Long?> = _recordingStartTime.asStateFlow()
+
+    // Live streaming state (watch -> phone)
+    val streamingState: StateFlow<StreamingManager.StreamingState> =
+        streamingManager.streamingState
 
     // Samsung Health connection state - Start button should be disabled when false
     val isSamsungHealthConnected: StateFlow<Boolean> =
@@ -106,12 +92,6 @@ class SettingsViewModel(
     }
 
     init {
-        viewModelScope.launch {
-            repository.lastSyncTimestampFlow.collect {
-                _lastSyncTimestamp.value = it
-            }
-        }
-
         viewModelScope.launch {
             sensorController.controllerStateFlow.collect {
                 if (it.flag == ControllerState.FLAG.RUNNING) {
@@ -171,8 +151,35 @@ class SettingsViewModel(
             return
         }
         if (status) sensor.enable()
-        else sensor.disable()
+        else {
+            permissionJobs.remove(sensorName)?.cancel()
+            sensor.disable()
+        }
     }
+
+    /**
+     * Enable a sensor once its permissions are granted. The permission dialog is
+     * asynchronous, so calling enable() right after request() sees the pre-grant
+     * state and leaves the sensor disabled; this waits for the grant instead.
+     */
+    fun enableWhenGranted(sensorName: String, permissionManager: PermissionManager) {
+        val sensor = sensorMap[sensorName] ?: run {
+            Log.w(TAG, "Sensor not found: $sensorName")
+            return
+        }
+        permissionManager.request(sensor.permissions)
+        sensor.enable() // Enables immediately if already granted, else marks "Permission required"
+        permissionJobs[sensorName]?.cancel()
+        permissionJobs[sensorName] = viewModelScope.launch {
+            val granted = withTimeoutOrNull(PERMISSION_WAIT_MS) {
+                permissionManager.getPermissionFlow(sensor.permissions)
+                    .first { states -> states.values.all { it == PermissionState.GRANTED } }
+            }
+            if (granted != null) sensor.enable()
+        }
+    }
+
+    private val permissionJobs = mutableMapOf<String, Job>()
 
     fun getDeviceInfo(context: Context, callback: (DeviceInfo) -> Unit) {
         Wearable.getNodeClient(context).localNode
@@ -206,14 +213,18 @@ class SettingsViewModel(
         sensorController.stop()
     }
 
-    fun upload() {
+    fun export(context: Context) {
         viewModelScope.launch {
-            phoneCommunicationManager.sendDataToPhone()
+            try {
+                val fileCount = withContext(Dispatchers.IO) {
+                    watchDataExporter.exportAll()
+                }
+                NotificationHelper.showExportSuccess(context, fileCount)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to export sensor data: ${e.message}", e)
+                NotificationHelper.showExportFailure(context, e, "Failed to export sensor data")
+            }
         }
-    }
-
-    fun refreshLastSyncTimestamp() {
-        // Reactive via lastSyncTimestampFlow
     }
 
     fun flush(context: Context) {

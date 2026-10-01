@@ -20,10 +20,10 @@ object NotificationHelper {
         val channelName: String,
         val description: String
     ) {
-        UPLOAD_DATA(
-            Constants.NotificationChannel.UPLOAD_DATA_ID,
-            Constants.NotificationChannel.UPLOAD_DATA_NAME,
-            Constants.NotificationChannel.UPLOAD_DATA_DESCRIPTION
+        EXPORT_DATA(
+            Constants.NotificationChannel.EXPORT_DATA_ID,
+            Constants.NotificationChannel.EXPORT_DATA_NAME,
+            Constants.NotificationChannel.EXPORT_DATA_DESCRIPTION
         ),
         FLUSH_DATA(
             Constants.NotificationChannel.FLUSH_DATA_ID,
@@ -137,22 +137,22 @@ object NotificationHelper {
     }
 
     /**
-     * Show phone communication success notification
+     * Show CSV export success notification
      */
-    fun showPhoneCommunicationSuccess(context: Context) {
+    fun showExportSuccess(context: Context, fileCount: Int) {
         showSuccessNotification(
             context = context,
-            channelConfig = NotificationChannelConfig.UPLOAD_DATA,
-            title = context.getString(R.string.notification_upload_success_title),
-            message = context.getString(R.string.notification_upload_success_message),
-            notificationId = Constants.NotificationId.UPLOAD_DATA_SUCCESS
+            channelConfig = NotificationChannelConfig.EXPORT_DATA,
+            title = context.getString(R.string.notification_export_success_title),
+            message = context.getString(R.string.notification_export_success_message) + " ($fileCount files)",
+            notificationId = Constants.NotificationId.EXPORT_DATA_SUCCESS
         )
     }
 
     /**
-     * Show phone communication failure notification
+     * Show CSV export failure notification
      */
-    fun showPhoneCommunicationFailure(
+    fun showExportFailure(
         context: Context,
         exception: Throwable,
         contextInfo: String? = null
@@ -161,21 +161,9 @@ object NotificationHelper {
             context = context,
             exception = exception,
             contextInfo = contextInfo,
-            channelConfig = NotificationChannelConfig.UPLOAD_DATA,
-            title = context.getString(R.string.notification_upload_failure_title),
-            notificationId = Constants.NotificationId.UPLOAD_DATA_FAILURE
-        )
-    }
-
-    /**
-     * Show phone communication failure notification with message string (for non-exception cases)
-     * Internally creates an exception to reuse the exception handling logic
-     */
-    fun showPhoneCommunicationFailure(context: Context, message: String) {
-        showPhoneCommunicationFailure(
-            context = context,
-            exception = RuntimeException(message),
-            contextInfo = null
+            channelConfig = NotificationChannelConfig.EXPORT_DATA,
+            title = context.getString(R.string.notification_export_failure_title),
+            notificationId = Constants.NotificationId.EXPORT_DATA_FAILURE
         )
     }
 
